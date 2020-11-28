@@ -1,226 +1,172 @@
 <template>
   <div class="swiper-container">
-            <div class="swiper-wrapper">
-                <div class="swiper-slide" v-for="v in videos" @click="dublePlay(v.id,$event)" :key="v.id">
-                    <!-- 播放按钮 -->
-                    <img v-show="!v.playing" class="play-btn" src="../image/play.png" alt="">
-
-                    <!-- 头像 -->
-                    <img :src="v.author" class="author" alt="" srcset="">
-                    <!-- 获得赞的数量 -->
-                    <div class="reward-num">
-                        <img src="../image/active.png" alt="" srcset="">
-                        <p>{{v.likenum}}</p>
-                    </div>
-
-                    <!-- 点赞出现的心 -->
-                    <div class="hearts">
-                        <img v-for="h in hearts" :key="h.id" :style="{left:h.x+'px',top:h.y+'px'}"
-                            src="../image/active.png" alt="">
-                    </div>
-
-                    <video :id="'v-'+v.id" x5-video-player-fullscreen="true" webkit-playsinline="true"
-                        x-webkit-airplay="true" playsinline="true" x5-playsinline :src="v.videoUrl"
-                        :poster="v.poster"></video>
-                </div>
-            </div>
+    <div class="swiper-wrapper">
+      <div class="swiper-slide" v-for="v in videos" @click="dublePlay(v.id, $event)" :key="v.id">
+        <!-- 播放按钮 -->
+        <img v-show="!v.playing" class="play-btn" src="../static/image/play.png" alt="" />
+        <!-- 头像 -->
+        <img src="https://ss1.bdstatic.com/70cFuXSh_Q1YnxGkpoWK1HF6hhy/it/u=3364379035,3672240386&fm=26&gp=0.jpg" class="author" alt="" srcset="" />
+        <!-- 获得赞的数量 -->
+        <div class="reward-num">
+          <img src="../static/image/active.png" alt="" srcset="" />
+          <p>{{ v.likenum }}</p>
         </div>
+        <!-- 点赞出现的心 -->
+        <div class="hearts">
+          <img v-for="h in hearts" :key="h.id" :style="{ left: h.x + 'px', top: h.y + 'px' }" src="../static/image/active.png" alt="" />
+        </div>
+        <video :id="'v-' + v.id" x5-video-player-fullscreen="true" webkit-playsinline="true" x-webkit-airplay="true" playsinline="true" x5-playsinline :src="v.videoUrl" :poster="v.poster"></video>
+      </div>
+    </div>
+  </div>
 
-        <!-- 底部导航栏 -->
-        <footer>
-            <ul>
-                <li>首页</li>
-                <li>朋友</li>
-                <li><img src="../image/kkb.png" alt=""></li>
-                <li>消息</li>
-                <li>我</li>
-            </ul>
-        </footer>
+  <!-- 底部导航栏 -->
+  <footer>
+    <ul>
+      <li>首页</li>
+      <li>朋友</li>
+      <li><img src="../static/image/kkb.png" alt="" /></li>
+      <li>消息</li>
+      <li>我</li>
+    </ul>
+  </footer>
 </template>
 
 <script>
-// import {beforeCreate} from 'vue'
-import 'swiper/swiper-bundle.css'
-import '../static/swiper-bundle.min.css'
-import VIDEOS from '../static/data'
-import flexible from '../static/flexable'
+import { onMounted, onBeforeMount, ref, reactive } from "vue";
+import { Swiper } from "swiper";
+import "../static/swiper-bundle.min.css";
+import "../static/index.css";
+import VIDEOS from "../static/data";
+import flexible from "../static/flexable";
+// import axios from 'axios'
 export default {
-  name: 'App',
-  created(){
-        new flexible(window, document);
-    },
-  components: {
-  
-  },
-  data(){
-      return {
-        videos:VIDEOS,
-        hearts:[]
+   
+  setup() {
+    let videos = reactive(VIDEOS)
+ 
+    
+    onBeforeMount(() => {
+      // let rel = axios.get("/videos");
+    // videos =rel.data.videos;
+      new flexible(window, document);
+
+      // return videos
+    });
+    let hearts = reactive([]);
+    let timer = null;
+    let lastIndex = ref(0);
+    let currentIndex = ref(0);
+    let db_start = 0;
+    let playing = ref(false);
+    let myswiper = reactive({});
+    onMounted(() => {
+      // let _self = this;
+      // 初始化swiper
+      myswiper = new Swiper(".swiper-container", {
+        direction: "vertical", // 垂直切换选项
+        on: {
+          slideChangeTransitionEnd: function () {
+            console.log(myswiper);
+            lastIndex.value = myswiper.currentIndex || 0;
+            console.log(lastIndex);
+            myswiper.currentIndex = myswiper.activeIndex;
+            console.log(myswiper.currentIndex, myswiper.activeIndex, lastIndex);
+            switchON(); // 判断上一个暂停 当前播放
+          },
+        },
+      });
+    });
+    const dublePlay = (id, e) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        clearTimeout(timer);
+        playClick(id);
+        db_start = 0;
+      }, 300);
+      if (db_start === 0) {
+        db_start = new Date().getTime();
+      } else {
+        let now = new Date().getTime();
+        let del = now - db_start;
+        if (del <= 300) {
+          // 双击
+          clearTimeout(timer);
+          // 小心心
+          likes(e, id);
+        }
+        db_start = 0;
       }
-    },
-  setup(){
-  
-  }
-}
+    };
+    const playClick = (id) => {
+      videos.forEach((v) => {
+        if (v.id === id) {
+          // document.querySelector('#v-' + id).play()
+          // 单击暂停
+          if (v.playing) {
+            v.playing = false;
+            // playing.value=true
+            console.log("暂停");
+            document.querySelector("#v-" + id).pause();
+          } else {
+            v.playing = true;
+            console.log("播放");
+            // playing.value=false
+            document.querySelector("#v-" + id).play();
+          }
+        }
+      });
+    };
+    const switchON = () => {
+      // 修改播放状态
+      document.querySelector("#v-" + lastIndex.value).pause();
+
+      videos.forEach((v) => {
+        if (v.id === lastIndex.value) {
+          v.playing = false;
+        } else if (v.id === currentIndex.value) {
+          // v.playing = true;
+          if (v.playing) {
+            document.querySelector("#v-" + myswiper.currentIndex).play();
+          }
+        }
+      });
+    };
+    // 双击小心心
+    const likes = (e, id) => {
+      const screenW = document.querySelector(".swiper-container").offsetLeft;
+      let x = e.clientX - screenW - 40;
+      let y = e.clientY - 40;
+      hearts.push({
+        x,
+        y,
+        id: new Date().getTime(),
+      });
+      if (hearts.length > 5) {
+        hearts.shift();
+      }
+      videos.forEach((v) => {
+        if (v.id === id) {
+          v.likenum++;
+        }
+      });
+    };
+    return {
+      dublePlay,
+      playClick,
+      switchON,
+      likes,
+      timer,
+      lastIndex,
+      currentIndex,
+      db_start,
+      hearts,
+      videos,
+      playing,
+      myswiper,
+    };
+  },
+};
 </script>
 
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-
-* {
-    padding: 0;
-    margin: 0;
-}
-
-html,
-body,
-#app {
-    width: 100%;
-    height: 100%;
-}
-
-body {
-    overflow: hidden;
-    background-color: #111;
-    padding: 0;
-    margin: 0;
-    overflow: hidden;
-}
-/* #app{
-    position: relative;
-} */
-
-/* 视频翻页 */
-.swiper-container {
-    width: 10rem;
-    height: 100%;
-    background-color: black;
-    left: 50%;
-    margin-left: -5rem;
-    position: relative;
-}
-.swiper-slide{
-    /* 一定要设置溢出隐藏，不然会显示下一页的动画 */
-    overflow: hidden;
-}
-.swiper-slide video{
-    width: 100%;
-    height: 100%;
-    outline: none;
-}
-
-/* 底部导航栏 */
-footer{
-    width: 10rem;
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    margin-left: -5rem;
-    z-index: 100;
-    background-color: #000;
-}
-footer ul{
-    width: 100%;
-    list-style: none;margin: 0;padding: 0;
-    display: flex;
-    height: 50px;
-    color: #fff;
-    text-align: center;
-    line-height: 50px;
-    font-size: 18px;
-}
-footer ul li{
-    flex: 1;
-}
-
-footer ul li img{
-    height: 40px;
-    vertical-align: middle;
-    border-radius: 5px;
-}
-
-/* 播放按钮 */
-.play-btn{
-    width: 100px;
-    height: 100px;
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    margin-left: -50px;
-    margin-top: -75px;
-    opacity: 0.5;
-    z-index: 50;
-}
-
-/* 作者头像 */
-.author{
-    width: 50px;
-    height: 50px;
-    position: absolute;
-    right: 20px;
-    top: 50%;
-    z-index: 100;
-    border: solid 2px rgb(255, 53, 86);
-    border-radius: 50px;
-}
-
-/* 点赞数量 */
-.reward-num{
-    width: 50px;
-    position: absolute;
-    right: 20px;
-    top: 50%;
-    margin-top: 70px;
-    z-index: 100;
-    color: #fff;
-    font-size: 20px;
-    font-weight: 800;
-    text-align: center;
-}
-.reward-num img{
-    width: 100%;
-}
-
-/*  点赞出现的心 */
-.hearts{
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    left: 0;
-    top: 0;
-    z-index: 50;
-}
-.hearts img{
-    position: absolute;
-    animation: heart-ani 1s ease-in-out;
-    opacity: 0;
-}
-
-/* 小心心动画 */
-@keyframes heart-ani{
-    0%{
-        opacity: 1;
-        transform: scale(1.5);
-    }
-    10%{
-        transform: scale(1);
-    }
-    20%{
-        transform: scale(1.25);
-    }
-    30%{
-        transform: scale(1);
-    }
-    100%{
-        transform: scale(3) translateY(-100px);
-        opacity: 0;
-    }
-}
-</style>
+<style></style>
