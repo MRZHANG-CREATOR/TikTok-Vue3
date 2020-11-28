@@ -1,5 +1,5 @@
-# tiktok-vue3
-
+# Tiktok-Vue3
+用vue3实现抖音最最最最基本小功能
 ## Project setup
 ```
 npm install
