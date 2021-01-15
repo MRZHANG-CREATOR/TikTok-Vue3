@@ -1,7 +1,7 @@
 function flexible (window, document) {
     var docEl = document.documentElement
     var dpr = window.devicePixelRatio || 1
-    console.log('flexable')
+    // console.log('flexable')
     // adjust body font size
     function setBodyFontSize () {
       if (document.body) {
